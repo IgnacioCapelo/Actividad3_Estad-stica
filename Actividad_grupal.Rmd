@@ -1,0 +1,75 @@
+---
+title: "Untitled"
+author: "Grupo 3"
+date: "2024-02-05"
+output: html_document
+---
+
+En primer lugar, deberíamos realizar un estudio de la normalidad de las variables.
+```{r setup, include=FALSE}
+
+```
+
+Después, realizamos un ánalisis PCA para los datos de alimentos y nutrientes contenidos en nuestros datos. Incluimos el gráfico scree plor de los componentes principales, donde se aprecia que los 2 primeros componentes recogen más varianza explicada que el resto.
+
+```{r}
+library (stats)
+library(factoextra)
+library(tidyverse)
+library(FactoMineR)
+data <- read.csv("/home/ignacio/UNIR/Bioestadística y R/mubio02_act3/mubio02_act3_alimentos_nutrientes_4900.csv", na.strings = "", fileEncoding = "UTF-8-BOM")
+if (any(is.na(data))){
+ data_complete<- data[complete.cases(data),]}
+pca_almnut_complete <- prcomp(data_complete[,(28:177)], scale. = TRUE)
+#scree plot
+fviz_eig(pca_almnut_complete, title= "Scree plot de los componentes principales")
+```
+
+Para profundizar más en el análisis, se genera una tabla donde se refleja las cargas que tiene cada variables sobre cada uno de los componentes.( Aquí he añadido solo los 3 primeros porque son los que más varianza recogen, pero si quereis se pueden añadir todos los componentes)
+
+```{r}
+#Tabla de cargas
+library(kableExtra)
+a <- data_frame(pca_almnut_complete$rotation[,1])
+for (i in 2:3){
+  a <- a%>%add_column(pca_almnut_complete$rotation[,i], .name_repair = "minimal")
+}
+lista_nombres <- paste("Componente", 1:3, sep = "")
+names(a)<-lista_nombres
+Variable <- names(data_complete[,(28:177)])
+a<- cbind(Variable, a)
+
+kable(a, 
+      caption="Cargas de las variables sobre los 3 componentes principales")%>%
+  kable_styling(full_width=TRUE)
+```
+Para hacer los resultados más visuales se pueden representar las cargas de cada variable gráficamente.
+```{r}
+fviz_contrib(pca_almnut_complete, choice = "var", axes = 1, top = 10, 
+             title="Contribución de variables al componente principal 1")
+fviz_contrib(pca_almnut_complete, choice = "var", axes = 2, top = 10, 
+             title="Contribución de variables al componente principal 2")
+
+biplot(pca_almnut_complete, scale = 0, cex =0.6 , col = c("#99C5E3", "#7BC16E"), expand=1)
+
+fviz_pca_var(pca_almnut_complete, geom.ind = "point", 
+             col.var = c("#FC4E07"), 
+             axes = c(1, 2), 
+             pointsize = 1.5) 
+
+```
+(No he conseguido averiguar como hacer para añadir las variables sin que se solapen)
+```{r}
+library(pheatmap)
+a2<-as.data.frame(t(a))[2:4,]
+names(a2) <- (a[,1])
+a2[]<-lapply(a2[,1:150], as.numeric)
+pheatmap(a2, 
+         column_names="Puta",
+         cluster_rows = TRUE, 
+         cluster_cols = TRUE,
+         color = colorRampPalette(c("blue", "white", "red"))(100),
+         show_colnames = FALSE,
+         cellwidth = 2.8
+         )
+```
