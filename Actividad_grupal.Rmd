@@ -1,56 +1,105 @@
 ---
-title: "Untitled"
+title: "Actividad 3 grupal"
 author: "Grupo 3"
-date: "2024-02-05"
+date: "2024-02-04"
 output: html_document
 ---
-
 En primer lugar, deberíamos realizar un estudio de la normalidad de las variables.
-```{r setup, include=FALSE}
+```{r echo=TRUE}
+data <- read.csv("/home/ignacio/UNIR/Bioestadística y R/mubio02_act3/mubio02_act3_alimentos_nutrientes_4900.csv", 
+                  na.strings = "", fileEncoding = "UTF-8-BOM")
+if (any(is.na(data))){
+ data_complete<- data[complete.cases(data),]}
+
+tabla1<- data.frame(Variable=character(),Test_utilizado = character(), 
+                    p_valor= numeric(),Interpretación= character())
+variables <- as.list(names(data_complete[0,(28:177)])) #Creamos una lista con el nombre de las variables
+for (variab in variables){
+  variable_datos<- data_complete[,variab] #La variable variable_datos será la columna de 
+  #cada alimento/nutriente con el que trabajemos en cada vuelta del bucle.
+  if(length(variable_datos)<5000){
+    test <- shapiro.test(variable_datos)#El test de Shapiro Wilks trabaja con 
+    #tamaños muestrales inferiores a 5000
+  }else{
+    test <- ad.test(variable_datos)#Si el tamaño muestral es superior a 5000 
+    #utilizaremos el test de Anderson-Darling.
+  }
+  p_valor<-test$p.value
+  nombre_test<-test$method
+  if (p_valor < 0.05){
+    interp <- "No normalidad"
+  }else{
+    interp<- "No normalidad"
+  }
+  tabla1<- tabla1%>% add_row(Variable=variab, Test_utilizado=nombre_test,
+                             p_valor=p_valor, Interpretación=interp)
+}
+kable(tabla1, caption = "Tabla 1: Estudio de normalidad de variables" ,
+      align=c("l","c","c","r"), escape=FALSE) %>%
+  kable_styling(full_width = TRUE)
 
 ```
 
-Después, realizamos un ánalisis PCA para los datos de alimentos y nutrientes contenidos en nuestros datos. Incluimos el gráfico scree plor de los componentes principales, donde se aprecia que los 2 primeros componentes recogen más varianza explicada que el resto.
 
-```{r}
+
+
+
+
+Después, realizamos un ánalisis PCA para los datos de alimentos y nutrientes contenidos en nuestros datos. Incluimos el gráfico scree plot de los componentes principales, donde se aprecia que los 2 primeros componentes recogen más varianza explicada que el resto.
+
+```{r echo=TRUE}
 library (stats)
 library(factoextra)
 library(tidyverse)
 library(FactoMineR)
 data <- read.csv("/home/ignacio/UNIR/Bioestadística y R/mubio02_act3/mubio02_act3_alimentos_nutrientes_4900.csv", na.strings = "", fileEncoding = "UTF-8-BOM")
 if (any(is.na(data))){
- data_complete<- data[complete.cases(data),]}
-pca_almnut_complete <- prcomp(data_complete[,(28:177)], scale. = TRUE)
+ data_complete<- data[complete.cases(data),]} #Eliminamos aquellas filas que contengan valores missing
+pca_almnut_complete <- prcomp(data_complete[,(28:177)], scale. = TRUE) # Llevamos a cabo un análisis PCA de los alimentos y nutrientes (28:177), estandarizando los resultados de cada variable mediante el argumento scale.=TRUE.
 #scree plot
-fviz_eig(pca_almnut_complete, title= "Scree plot de los componentes principales")
+fviz_eig(pca_almnut_complete, title= "Figura 1. Scree plot de los componentes principales") 
 ```
 
-Para profundizar más en el análisis, se genera una tabla donde se refleja las cargas que tiene cada variables sobre cada uno de los componentes.( Aquí he añadido solo los 3 primeros porque son los que más varianza recogen, pero si quereis se pueden añadir todos los componentes)
+En el gráfico scree plot se aprecia que los componentes que más varianza explicada recogen son el 1 y el 2.
 
-```{r}
+Para profundizar más en el análisis, se genera una tabla donde se refleja la carga que tiene cada variable sobre estos componentes principales (Tabla 1).
+
+```{r echo=TRUE}
 #Tabla de cargas
 library(kableExtra)
-a <- data_frame(pca_almnut_complete$rotation[,1])
+a <- data_frame(round(pca_almnut_complete$rotation[,1],3)) #Generamos un data frame con los valores de las cargas (obtenidos de la matriz de rotación) para el primer componente
+#Redondeamos a 3 decimales los valores de la matriz de rotación obtenida en el PCA (el redondeo a 1 decimal no muestra las diferencas entre variables.)
 for (i in 2:3){
-  a <- a%>%add_column(pca_almnut_complete$rotation[,i], .name_repair = "minimal")
+  a <- a%>%add_column(round(pca_almnut_complete$rotation[,i],3), .name_repair = "minimal")
 }
-lista_nombres <- paste("Componente", 1:3, sep = "")
+lista_nombres <- paste("Componente", 1:3, sep = "") #Creamos los títulos para las columnas
 names(a)<-lista_nombres
 Variable <- names(data_complete[,(28:177)])
-a<- cbind(Variable, a)
+a<- cbind(Variable, a) #Añadimos los títulos
 
 kable(a, 
-      caption="Cargas de las variables sobre los 3 componentes principales")%>%
-  kable_styling(full_width=TRUE)
+      caption="Tabla 1. Cargas de las variables sobre los 3 componentes principales")%>%
+  kable_styling(full_width=TRUE) #Generamos una tabla en formato html.
 ```
-Para hacer los resultados más visuales se pueden representar las cargas de cada variable gráficamente.
-```{r}
-fviz_contrib(pca_almnut_complete, choice = "var", axes = 1, top = 10, 
-             title="Contribución de variables al componente principal 1")
-fviz_contrib(pca_almnut_complete, choice = "var", axes = 2, top = 10, 
-             title="Contribución de variables al componente principal 2")
 
+Para mostrar los resultados visualmente se pueden representar una serie de gráficos que se presentan a continuación. 
+
+```{r echo=TRUE}
+library (ggplot2)
+fviz_contrib(pca_almnut_complete, choice = "var", axes = 1, top = 10, 
+             title="Figura 2. Contribución de variables al componente principal 1")
+fviz_contrib(pca_almnut_complete, choice = "var", axes = 2, top = 10, 
+             title="Figura 3. Contribución de variables al componente principal 2")
+```
+En las figuras 2 y 3 se puede observar como para el componente principal 1 la aportación de las variables es más homogénea que para el componente 2, donde destaca la variable "nutriente6".
+
+
+```{r echo=TRUE}
 biplot(pca_almnut_complete, scale = 0, cex =0.6 , col = c("#99C5E3", "#7BC16E"), expand=1)
+```
+Figura 4. Biplot de las variables representadas en los componentes principales 1 y 2.
+
+```{r echo=TRUE}
 
 fviz_pca_var(pca_almnut_complete, geom.ind = "point", 
              col.var = c("#FC4E07"), 
@@ -58,18 +107,118 @@ fviz_pca_var(pca_almnut_complete, geom.ind = "point",
              pointsize = 1.5) 
 
 ```
-(No he conseguido averiguar como hacer para añadir las variables sin que se solapen)
-```{r}
+
+Figura 5.
+
+```{r echo=TRUE}
 library(pheatmap)
 a2<-as.data.frame(t(a))[2:4,]
 names(a2) <- (a[,1])
 a2[]<-lapply(a2[,1:150], as.numeric)
 pheatmap(a2, 
-         column_names="Puta",
          cluster_rows = TRUE, 
          cluster_cols = TRUE,
          color = colorRampPalette(c("blue", "white", "red"))(100),
          show_colnames = FALSE,
          cellwidth = 2.8
          )
+```
+Figura 6. Heatmap representativo de las cargas de las variables para los componentes principales 1,2 y 3.
+
+
+Una vez generado y representado el análisis PCA, se crea una tabla descriptiva de los valores de cada variable dividiendo a la población en tres grupos, los cuales se corresponden con los terciles de los valores de cada componente principal. Es decir, para componente se obtiene un score para cada uno de los individuos del estudio, mediante estos scores se divide a la población en tres grupos (según al tercil al que pertenezcan). Dicha clasificación de individuos se mantiene para cada una de las variables, de las cuales se obtiene la media y desciación estándar para cada grupo. 
+Asimismo, también se lleva a cabo un análisis inferencial mediante test ANOVA que muestra si existen difencias significativas entre las medias de cada uno de los grupos. El contraste de hipótesis del mismo es: 
+
+  H0: Las medias de la variables para cada tercil son iguales.
+  H1: Existen diferencias significativas para las medias de la variables para cada tercil.
+
+
+```{r echo=TRUE}
+obtener_tabla_terciles <- function(pc=numeric()){ #Creamos una función paa obtener la tabla de interés para el componente que seleccionemos mediante la variable pc
+  datos_predichos <- predict(pca_almnut_complete, data_complete[,(28:177)]) #Al haber realizado el PCA con estos datos, esta matriz se corresponde con la matriz x obtenida en el PCA
+  datos_pca <- as.data.frame(pca_almnut_complete$x[,0:2])#resumimos en un data_frame los scores para el componente principal 1 y 2.
+  terciles <- quantile(datos_pca[,pc], probs=c(1/3,2/3)) #Determinamos los terciles del componente elegido
+  data_complete$terciles <- cut(datos_pca[,pc], breaks = c(-Inf, terciles, Inf), labels= c("T1","T2","T3"))#Separamos los datos por terciles
+  tabla_terciles_PC<-data_frame(Variable=character(), T1=character(),T2=character(),T3=character(), p_valor=numeric())#Creamos un data frame vacío con las columnas de interés
+  variables <- as.list(names(data_complete[0,(28:177)])) #Creamos una lista con el nombre de las variables, que introduciremos en la columna "Variable".
+  n_individuos <- as.data.frame(table(data_complete$terciles)) #Empleamos la función table() para crear una tabla donde aparezcan los totales de individuos para cada tercil. Lo convertimos a data_frame para llamar a los datos después.
+  
+  tabla_terciles_PC <- tabla_terciles_PC %>% add_row(Variable="N individuos", T1 = as.character(n_individuos[1,2]) , 
+                                                       T2= as.character(n_individuos[2,2]), 
+                                                       T3=as.character(n_individuos[3,2]))
+  #Añadimos una fla al data_frame con los totales para cada tercil.
+  for (elem in variables){#Mediante un bucle añadimos la información de interés para cada uno de las variables.
+    z <- data_complete %>%
+      group_by(terciles)%>% #Agrupamos los individuos por los terciles establecidos por el componente seleccionado.
+      summarise(media_terciles=mean(!!sym(elem)), ds_terciles= sd(!!sym(elem))) #Se calcula la media y desviación estándar. Se utiliza "!!sym()" para poder utilizar la variable generada en cada vuelta del bucle (que es tipo character()) como referencia de la columna del data_frame. 
+    formula_bucle <- as.formula(paste(elem,"~ terciles")) #Se emplea as. formula() para poder incluir la variable elem del bucle (tipo character) en la fórmula de anova
+    anova <- aov(formula_bucle, data=data_complete) #Aplicamos el test ANOVA para el análisis inferencial.
+    summary_anova <- summary(anova)
+    p_value<- round(summary_anova[[1]]$"Pr(>F)"[1],3) #Almacenamos los valores para el p_valor redondeados a 3 decimales en la variable p-value
+    tabla_terciles_PC <- tabla_terciles_PC %>% add_row(Variable=elem, T1= paste(as.character(round(z[1,2],1))," [", as.character(round(z[1,3],1)),"]",sep=""),
+                                                                          T2= paste (as.character(round(z[2,2],1)), " [", as.character(round(z[2,3],1)),"]",sep=""),
+                                                                          T3= paste(as.character(round(z[3,2],1))," [", as.character(round(z[3,3],1)),"]",sep=""),
+                                                                          p_valor=p_value) 
+    #Añadimos una fila por cada vuelta del bucle para añadir la información de interés.
+              
+      
+  }
+  return (tabla_terciles_PC)} #La función nos devuelve un data frame con la información de interés para cada una variable del componente seleccionado.
+tabla_terciles_PC1<-obtener_tabla_terciles(1) #Aplicamos la función creada para cada uno de los componentes principales (1 y 2).
+tabla_terciles_PC1<-obtener_tabla_terciles(2)
+tabla_terciles <- cbind(tabla_terciles_PC1, tabla_terciles_PC2) #Unimos ambos data_frame en uno.
+
+table_terciles <- kable(tabla_terciles, caption= "Tabla descriptiva de los terciles de los dos componentes principales")%>%
+    kable_styling(full_width=TRUE)%>%
+    add_header_above(header = c("", "Componente 1" = 4, "Componente 2" = 4)) #Generamos una tabal en formato html del data_frame final
+table_terciles
+```
+
+
+Aplicación de un modelo de regresión lineal para predecir la prevalencia de diabetes en función del componente principal 1 y 2, el IMC y la edad. 
+```{r}
+obtener_filas_rl <- function(Componente=numeric()){  #Generamos una función con la que vamos a obtener las OR ratios, IC 95% y p valor 
+                                                      #para cada tercil del componente que introduzcamos numéricamente en la variable "Componente"
+  
+  terciles <- quantile(datos_pca[,Componente], probs=c(1/3,2/3)) #Determinamos los terciles del componente elegido
+  data_complete$terciles <- cut(datos_pca[,Componente], breaks = c(-Inf, terciles, Inf), labels= c("T1","T2","T3")) #Separamos los datos por terciles
+  modelo <- glm(diab_prev ~ terciles + IMC + edad , data = data_complete, family = binomial) #Llevamos a cabo el modelo de regresión lineal
+  resumen <- summary(modelo) #Guardamos en la variable resumen los datos del modelo de regresión lineal
+  ors <- exp(cbind(OR= coef(modelo), suppressMessages(confint(modelo)))) #SuppressMessages para no mostrar "Waiting for profiling to be done..."
+                                                                          #Obtenemos las OR y el intervalo de confianza
+  m <- resumen$coefficients[, "Pr(>|z|)"] #Guardamos en la variable m los valores de p_valor obtenidos.
+  fila1_rl <- data_frame("Variable"= character(), "OR (IC 95%)"=character(), "p valor"=numeric())%>% #Contruiremos para cada tercil un data frame con las ORs e IC.
+    add_row("Variable"= paste("Componente ", Componente), "OR (IC 95%)"= "1 (Ref)", "p valor"= NA) #Para el tercil 1, de referencia, la tabla es diferente.
+  for(e in 2:3){ #Generamos un data frame con los valores de interés para cada tercil, después los unimos en un único data frame.
+    filas_rl <- data_frame("OR (IC 95%)"=character(), "p valor"=numeric())
+    filas_rl <- add_row(filas_rl, "OR (IC 95%)"= paste(as.character(round(ors[e,1],2))," (", as.character(round(ors[e,2],2))," a", as.character(round(ors[e,3],2)), ")"), "p valor"= round(m[e], 3))
+    fila1_rl <- cbind(fila1_rl, filas_rl)
+  } 
+  return(fila1_rl)} 
+Comp_1 <- obtener_filas_rl(1) #Con la función se consigue una fila de un data frame que resume la información relevante para un solo componente. Por tanto, aplicamos la 
+                              #función para los componentes de interés (1 y 2).
+Comp_2 <- obtener_filas_rl(2)
+a<- rbind(Comp_1,Comp_2) #Unimos ambas filas y obtenemos el resultado final.
+kable(a, caption ="Tabla resumen del modelo de regresión lineal para la prevalencia de diabetes en función de los diferentes grupos de los dos componentes principales")%>%
+  kable_styling(full_width = TRUE)%>%
+   add_header_above(header = c("", "T1" = 2, "T2" = 2, "T3" = 2 )) #Generamos la tabla en formato html a partir del data frame final.
+
+#Creamos una tabla nueva para las variables independientes.
+terciles <- quantile(datos_pca[,1], probs=c(1/3,2/3))
+data_complete$terciles <- cut(datos_pca[,1], breaks = c(-Inf, terciles, Inf), labels= c("T1","T2","T3"))
+modelo <- glm(diab_prev ~ terciles + IMC + edad , data = data_complete, family = binomial)
+resumen <- summary(modelo)
+ors <- exp(cbind(OR= coef(modelo), suppressMessages(confint(modelo)))) #SuppressMessages para no mostrar "Waiting for profiling to be done..."
+m <- resumen$coefficients[, "Pr(>|z|)"] #Estos mismo pasos están contenidos dentro de la función "obtener_filas_rl"
+filas_vi <- data_frame("Variable"= character(), "OR (IC 95%)"=character(), "p valor"=numeric()) #Generamos un data frame y añadidos la información relvante de cada variable
+filas_vi <- add_row(filas_vi, "Variable"= "IMC", "OR (IC 95%)"= paste(as.character(round(ors[4,1],2))," (", as.character(round(ors[4,2],2))," a", as.character(round(ors[4,3],2)), ")"), "p valor"= round(m[4], 3))
+filas_vi <- add_row(filas_vi, "Variable"= "Edad", "OR (IC 95%)"= paste(as.character(round(ors[5,1],2))," (", as.character(round(ors[5,2],2))," a", as.character(round(ors[5,3],2)), ")"), "p valor"= round(m[5], 3))# Cambiamos el número de la fila para obtener los datos de la siguiente variable
+
+table_vi<- kable(filas_vi, caption="Tabla resumen del modelo de regresión lineal para las variables independientes IMC y edad")%>%
+  kable_styling(full_width = TRUE) #Generamos una tabla en formato html
+
+table_vi
+
+  
+  
 ```
