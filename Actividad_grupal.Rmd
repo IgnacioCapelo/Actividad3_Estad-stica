@@ -222,3 +222,17 @@ table_vi
   
   
 ```
+
+Para crear la tabla de PCA componentes y R^2 utilizamos el siguiente código:
+```{r}
+# Calcular el R2
+R2 <- pca_almnut_complete$sdev^2 / sum(pca_almnut_complete$sdev^2)
+
+# Crear la tabla de los componentes principales y el R2
+tabla_pca_r2 <- cbind(Comp = 1:length(pca_almnut_complete$sdev), R2 = R2) %>%
+  as.data.frame()
+
+# Imprimir la tabla de los componentes principales y el R2
+tabla_pca_r2
+```
+
